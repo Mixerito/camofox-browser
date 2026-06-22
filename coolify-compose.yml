@@ -1,0 +1,43 @@
+services:
+  camofox-browser:
+    build:
+      context: .
+      dockerfile: Dockerfile.ci
+    container_name: camofox-browser
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      CAMOFOX_PORT: ${CAMOFOX_PORT:-9377}
+      # Required for noVNC
+      ENABLE_VNC: ${ENABLE_VNC:-1}
+      VNC_BIND: ${VNC_BIND:-0.0.0.0}
+      VNC_PORT: ${VNC_PORT:-5900}
+      NOVNC_PORT: ${NOVNC_PORT:-6080}
+      VNC_RESOLUTION: ${VNC_RESOLUTION:-1920x1080x24}
+      # Strongly recommended — set this in Coolify's Environment Variables UI
+      VNC_PASSWORD: ${VNC_PASSWORD}
+      # Node heap
+      MAX_OLD_SPACE_SIZE: ${MAX_OLD_SPACE_SIZE:-2048}
+      # Longer-lived browser sessions
+      BROWSER_IDLE_TIMEOUT_MS: ${BROWSER_IDLE_TIMEOUT_MS:-1800000}
+      SESSION_TIMEOUT_MS: ${SESSION_TIMEOUT_MS:-1800000}
+      TAB_INACTIVITY_MS: ${TAB_INACTIVITY_MS:-1800000}
+      # Explicit persistence paths inside mounted volume
+      CAMOFOX_PROFILE_DIR: /root/.camofox/profiles
+      CAMOFOX_COOKIES_DIR: /root/.camofox/cookies
+      CAMOFOX_TRACES_DIR: /root/.camofox/traces
+    volumes:
+      - camofox-data:/root/.camofox
+    ports:
+      # API for Hermes on the host only.
+      # Do NOT publicly expose this unless you add auth/firewalling.
+      - "127.0.0.1:${CAMOFOX_PORT:-9377}:${CAMOFOX_PORT:-9377}"
+      # Optional native VNC; bind localhost only.
+      - "127.0.0.1:${VNC_HOST_PORT:-5901}:5900"
+      # noVNC. If you expose this through Coolify's proxy/domain,
+      # you may not need this host port mapping, depending on your setup.
+      - "127.0.0.1:${NOVNC_PORT:-6080}:${NOVNC_PORT:-6080}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+volumes:
+  camofox-data:
